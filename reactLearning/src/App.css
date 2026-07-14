@@ -1,0 +1,15 @@
+w.formBody {
+  display: flex;
+  justify-content: center;
+  border: 0px;
+  gap: 10px;
+
+}
+
+.formBody input {
+  padding: 5px;
+}
+
+.formBody button {
+  padding: 5px;
+}
