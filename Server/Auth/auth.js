@@ -143,7 +143,7 @@ exports.sendOTP = async (req, res) => {
 
         await mailer.sendMail({
             from: process.env.EMAIL,
-            to: 'panneerselvamcmk220@gmail.com', // My personal mail for testing
+            to: user.userEmail,
             subject: "OTP for password reset",
             text: `Your OTP is ${OTP}. It will expire in 10 minutes.`
         });
