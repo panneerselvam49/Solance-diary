@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const Users = require('../models/users');
 const crypto = require('crypto');
-const mailer = require('../utilis/mailer');
+const mailer = require('../utility/mailer');
 const otpStorage = {};
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -136,6 +136,7 @@ exports.sendOTP = async (req, res) => {
         const OTP = crypto.randomInt(100000, 10000000);
         const otpExpiryTime = Date.now() + 10 * 60 * 1000;
 
+        // Store OTP temporarily
         otpStorage[userEmail] = {
             OTP,
             expiryTime: otpExpiryTime
