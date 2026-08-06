@@ -15,7 +15,6 @@ router.post('/auth/resetPassword', authController.resetPassword);
 // Entries Routes (Protected)
 router.post('/entries', authMiddleware, entriesController.createEntry);
 router.get('/entries', authMiddleware, entriesController.getEntries);
-router.get('/entries/:id', authMiddleware, entriesController.getEntryById);
 router.put('/entries/:id', authMiddleware, entriesController.updateEntry);
 router.delete('/entries/:id', authMiddleware, entriesController.deleteEntry);
 

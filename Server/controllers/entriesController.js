@@ -58,25 +58,6 @@ exports.getEntries = async (req, res) => {
     }
 };
 
-// Get single entry by ID
-exports.getEntryById = async (req, res) => {
-    try {
-        const entry = await Entries.findOne({ _id: req.params.id, userId: req.user._id });
-
-        if (!entry) {
-            return res.status(404).json({ success: false, message: "Entry not found" });
-        }
-
-        return res.status(200).json({
-            success: true,
-            data: entry
-        });
-    } catch (error) {
-        console.error("Get entry by ID error:", error);
-        return res.status(500).json({ success: false, message: "Internal server error", error: error.message });
-    }
-};
-
 // Update an entry
 exports.updateEntry = async (req, res) => {
     try {
