@@ -2,7 +2,18 @@ const jwt = require('jsonwebtoken');
 const Users = require('../models/users');
 const crypto = require('crypto');
 const mailer = require('../utility/mailer');
-const otpStorage = {};
+const { createClient } = require('redis');
+
+const client = createClient();
+
+client.on('error', err => console.log('Redis Client Error', err));
+
+client.connect().then(() => {
+    console.log("Redis connected!");
+})
+.catch(err => {
+    console.log("Error connecting to redid", err);
+});
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -134,13 +145,12 @@ exports.sendOTP = async (req, res) => {
         }
         
         const OTP = crypto.randomInt(100000, 10000000);
-        const otpExpiryTime = Date.now() + 10 * 60 * 1000;
 
-        // Store OTP temporarily
-        otpStorage[userEmail] = {
-            OTP,
-            expiryTime: otpExpiryTime
-        };
+        // Store OTP in Redis
+        await client.set(`otp:${userEmail}`, OTP);
+
+        // Automatically delete OTP after 3 minutes
+        await client.expire(`otp:${userEmail}`, 180);
 
         await mailer.sendMail({
             from: process.env.EMAIL,
@@ -168,20 +178,19 @@ exports.verifyOTP = async (req, res) => {
             return res.status(400).json({ success: false, message: "Please provide userEmail and OTP" });
         }
 
-        const storedOTP = otpStorage[userEmail];
+        const storedOTP = await client.get(`otp:${userEmail}`);
+        
         if (!storedOTP) {
-            return res.status(400).json({ success: false, message: "OTP not found or expired" });
+            res.status(401).json({ sucess: false, message: "OTP not found or Expired" });
         }
 
-        if (Number(storedOTP.OTP) !== Number(OTP)) {
-            return res.status(400).json({ success: false, message: "Invalid OTP" });
+        if (Number(storedOTP) !== Number(OTP)) {
+            res.status(400).json({ success: false, message: "Invalid OTP" });
         }
 
-        if (storedOTP.expiryTime < Date.now()) {
-            return res.status(400).json({ success: false, message: "OTP expired" });
+        if (storedOTP && Number(storedOTP) === Number(OTP)) {
+            client.del(`otp:${userEmail}`);
         }
-
-        delete otpStorage[userEmail];
 
         // Generate a reset token valid for 15 minutes
         const resetToken = jwt.sign({ email: userEmail, purpose: 'reset-password' }, JWT_SECRET, { expiresIn: '15m' });
@@ -224,7 +233,6 @@ exports.resetPassword = async (req, res) => {
             return res.send({ success: false, message: "Current password and New Password are same" });
         }
 
-        // Update user's password (mongoose model comparePassword/save will hash it)
         user.userPassword = newPassword;
         await user.save();
 
