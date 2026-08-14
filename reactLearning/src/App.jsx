@@ -350,7 +350,14 @@ function App() {
 		}
 	};
 
-	const handleLogout = () => {
+	const handleLogout = async () => {
+		await fetch(`${API_BASE}/auth/logout`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${token}`
+			}
+		});
 		localStorage.removeItem('token');
 		localStorage.removeItem('user');
 		setToken('');

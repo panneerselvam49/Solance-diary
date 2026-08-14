@@ -2,18 +2,7 @@ const jwt = require('jsonwebtoken');
 const Users = require('../models/users');
 const crypto = require('crypto');
 const mailer = require('../utility/mailer');
-const { createClient } = require('redis');
-
-const client = createClient();
-
-client.on('error', err => console.log('Redis Client Error', err));
-
-client.connect().then(() => {
-    console.log("Redis connected!");
-})
-.catch(err => {
-    console.log("Error connecting to redid", err);
-});
+const client = require('../utility/redisClient');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -242,3 +231,37 @@ exports.resetPassword = async (req, res) => {
         return res.status(500).json({ success: false, message: "Internal server error", error: error.message });
     }
 }
+
+// Logout User
+exports.logoutUser = async (req, res) => {
+    try {
+        const token = req.token;
+        const exp = req.tokenExp;
+
+        if (!token) {
+            return res.status(400).json({ success: false, message: "No token provided" });
+        }
+
+        const currentTime = Math.floor(Date.now() / 1000);
+        const ttl = exp ? (exp - currentTime) : 604800; // default 7 days fallback
+
+        if (ttl > 0) {
+            try {
+                if (client.isOpen) {
+                    await client.set(`blacklist:${token}`, 'true', {
+                        EX: ttl
+                    });
+                } else {
+                    console.warn('Redis client is not connected. Token was not added to blacklist.');
+                }
+            } catch (redisError) {
+                console.error('Redis blacklist store failed:', redisError);
+            }
+        }
+
+        return res.status(200).json({ success: true, message: "Logged out successfully" });
+    } catch (error) {
+        console.error("Logout error:", error);
+        return res.status(500).json({ success: false, message: "Internal server error", error: error.message });
+    }
+};

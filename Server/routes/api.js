@@ -11,6 +11,7 @@ router.post('/auth/updatePassword', authController.updatePassword);
 router.post('/auth/sendOTP', authController.sendOTP);
 router.post('/auth/verifyOTP', authController.verifyOTP);
 router.post('/auth/resetPassword', authController.resetPassword);
+router.post('/auth/logout', authMiddleware, authController.logoutUser);
 
 // Entries Routes (Protected)
 router.post('/entries', authMiddleware, entriesController.createEntry);
